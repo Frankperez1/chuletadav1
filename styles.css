@@ -1,0 +1,33 @@
+/* Diseño de la chuletada: claro/oscuro automático, verde = pagó, rojo = no pagó, gris = sin entregar */
+:root{--bg:#fff8f0;--card:#fff;--tx:#2a1a10;--dim:#7a6657;--line:#e8d9c8;--ac:#c2410c;--ok:#15803d;--okb:#dcfce7;--no:#b91c1c;--nob:#fee2e2;--gr:#f1ebe4;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#17100b;--card:#241812;--tx:#fbeee0;--dim:#b8a08b;--line:#4a3426;--ac:#fb923c;--ok:#4ade80;--okb:#12301d;--no:#f87171;--nob:#3b1414;--gr:#2c1f17}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI",Arial,sans-serif}
+.w{max-width:780px;margin:0 auto;padding:14px 14px 40px}
+h1{margin:0;font-size:1.3rem;color:var(--ac)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.hide{display:none!important}.muted{color:var(--dim);font-size:.85rem}.full{width:100%;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;font-size:.72rem;color:var(--dim)}
+.stats b{display:block;font-size:1.05rem;color:var(--tx)}.stats .g b{color:var(--ok)}.stats .r b{color:var(--no)}
+@media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;font:inherit;font-weight:700;padding:11px 6px;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:12px;cursor:pointer}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.scroll{overflow-x:auto}
+input,button,select,textarea{font:inherit}
+input[type=text],input[type=number],input[type=file],textarea,select{width:100%;padding:11px;margin:4px 0 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--tx)}
+.big{font-size:1.6rem;text-align:center;font-weight:800}
+.btn{display:inline-block;border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;text-decoration:none}
+.btn.center{text-align:center}.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}.btn.no{background:var(--no);border-color:var(--no);color:#fff}.btn.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.chips{display:flex;gap:6px;margin:6px 0 10px;flex-wrap:wrap}.chips .btn{padding:7px 11px;font-size:.85rem}.chips .btn.on{border-color:var(--ac);color:var(--ac)}
+.row{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:12px;margin-bottom:7px;border-left:6px solid;flex-wrap:wrap}
+.row.pagado{background:var(--okb);border-color:var(--ok)}.row.no_pagado{background:var(--nob);border-color:var(--no)}.row.sin_entregar{background:var(--gr);border-color:var(--line)}
+.row .n{font-size:1.2rem;font-weight:800;min-width:56px}.row .i{flex:1;min-width:130px;font-size:.9rem}.row .i small{display:block;color:var(--dim)}
+.row input{flex:1;min-width:120px;margin:0;padding:9px}
+.badge{font-weight:800;font-size:.75rem;padding:4px 10px;border-radius:99px;color:#fff}.badge.pagado{background:var(--ok)}.badge.no_pagado,.badge.sin_entregar{background:var(--no)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--dim);font-size:.68rem;text-transform:uppercase}td input{margin:0;padding:6px}td input.sm{width:64px}
+.btn:disabled,input:disabled{opacity:.6;cursor:not-allowed}

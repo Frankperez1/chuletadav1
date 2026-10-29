@@ -1,0 +1,17 @@
+{
+  "rules": {
+    "chuletada": {
+      ".read": true,
+      "config": {
+        ".write": "auth != null && auth.token.email === 'ADMIN@gmail.com'"
+      },
+      "cards": {
+        ".write": "auth != null && auth.token.email === 'ADMIN@gmail.com'",
+        "$c": {
+          ".write": "!data.exists() || data.child('l').val() != 1 || (auth != null && auth.token.email === 'CAJERO@gmail.com' && newData.child('n').val() == data.child('n').val() && newData.child('name').val() == data.child('name').val() && newData.child('l').val() == data.child('l').val())",
+          ".validate": "newData.hasChildren(['n','u']) && newData.child('n').isNumber()"
+        }
+      }
+    }
+  }
+}
