@@ -14,6 +14,7 @@ sin internet queda en cola y se envía sola al volver la conexión.
 - **Vendedor:** anota a quién entregó cada tarjeta y si pagó. Al pulsar **Guardar y cerrar mis tarjetas** todo su rango queda cerrado.
 - **Tarjeta cerrada:** solo la cambian el administrador y, únicamente el pago, el cajero (Firebase rechaza cualquier otro cambio, no solo la pantalla).
 - **Cajero:** busca tarjetas, marca/anula pagos (también en tarjetas cerradas), ve vendedores y exporta. No cambia nombres, candados, precio ni vendedores.
+- **Cobro por método:** al cobrar, el cajero (o el administrador) elige **Yape** o **Efectivo**. Arriba de su pantalla ve cuántas tarjetas y cuánto dinero entró por cada método. Si un vendedor marcó "Pagó" sin método, aparece un aviso para que el cajero lo complete. El CSV exportado trae la columna Método.
 - **Administrador:** todo lo del cajero, más cerrar/reabrir tarjetas, cambiar o añadir vendedores, precio, importar respaldos y borrar todo.
 - Cada uno entra con su propia contraseña (cuentas de Firebase Authentication).
 - Límite: una tarjeta **abierta** puede editarla cualquiera que sepa usar la consola. El candado protege después de guardar.

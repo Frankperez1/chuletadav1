@@ -18,10 +18,24 @@ async function stats() {
   const s = await api('/api/stats' + (role === 's' ? '?seller=' + encodeURIComponent(me) : ''));
   $('stats').innerHTML = `<div>Tarjetas<b>${s.tarjetas}</b></div><div class="g">Pagadas<b>${s.pagadas}</b></div>` +
     `<div class="r">Entregadas sin pagar<b>${s.entregadas_sin_pagar}</b></div><div class="g">Cobrado<b>${money(s.cobrado)}</b></div>`;
+  // Cajero / administrador: cuántas tarjetas se pagaron con Yape y cuántas en efectivo, y cuánto dinero es cada uno
+  $('pay').classList.toggle('hide', role === 's');
+  if (role !== 's') $('pay').innerHTML =
+    `<div class="y">💜 Yape<b>${s.yape_n} ${s.yape_n === 1 ? 'tarjeta' : 'tarjetas'}</b><small>${money(s.yape_monto)}</small></div>` +
+    `<div class="e">💵 Efectivo<b>${s.efectivo_n} ${s.efectivo_n === 1 ? 'tarjeta' : 'tarjetas'}</b><small>${money(s.efectivo_monto)}</small></div>` +
+    (s.sin_metodo_n ? `<p class="muted">⚠️ ${s.sin_metodo_n} pagada(s) sin método (${money(s.sin_metodo_monto)}): ábrelas y elige Yape o Efectivo.</p>` : '');
 }
-const rowCash = (f) => `<div class="row ${f.estado}"><span class="n">#${f.n}</span><span class="i">${f.name ? 'Entregada a ' + esc(f.name) : '<i>Sin entregar</i>'}<small>Vendedor: ${esc(f.seller) || '—'}${f.locked ? ' · 🔒 cerrada' : ''}</small></span>` +
-  `<span class="badge ${f.estado}">${f.paid ? 'PAGADO' : 'NO PAGADO'}</span><button class="btn" data-tg="${f.n}" data-paid="${f.paid ? 0 : 1}">${f.paid ? 'Anular' : 'Marcar pagado'}</button>` +
-  (role === 'a' ? `<button class="btn" data-lk="${f.n}" data-l="${f.locked ? 0 : 1}">${f.locked ? '🔓 Reabrir' : '🔒 Cerrar'}</button>` : '') + '</div>';
+const metodoTxt = (m) => m === 'y' ? 'Yape' : m === 'e' ? 'Efectivo' : 'sin método';
+const rowCash = (f) => {
+  const pagoBtns = f.paid
+    ? (f.metodo ? `<button class="btn" data-pay="${f.n}" data-m="${f.metodo === 'y' ? 'e' : 'y'}">Cambiar a ${f.metodo === 'y' ? 'Efectivo' : 'Yape'}</button>`
+                : `<button class="btn y" data-pay="${f.n}" data-m="y">💜 Yape</button><button class="btn e" data-pay="${f.n}" data-m="e">💵 Efectivo</button>`) +
+      `<button class="btn" data-tg="${f.n}" data-paid="0">Anular</button>`
+    : `<span class="paybtns"><button class="btn y" data-pay="${f.n}" data-m="y" data-new="1">💜 Pagó con Yape</button><button class="btn e" data-pay="${f.n}" data-m="e" data-new="1">💵 Pagó en efectivo</button></span>`;
+  return `<div class="row ${f.estado}"><span class="n">#${f.n}</span><span class="i">${f.name ? 'Entregada a ' + esc(f.name) : '<i>Sin entregar</i>'}<small>Vendedor: ${esc(f.seller) || '—'}${f.locked ? ' · 🔒 cerrada' : ''}</small></span>` +
+    (f.paid ? `<span class="badge ${f.metodo || 'pagado'}">PAGADO · ${metodoTxt(f.metodo)}</span>` : `<span class="badge ${f.estado}">NO PAGADO</span>`) + pagoBtns +
+    (role === 'a' ? `<button class="btn" data-lk="${f.n}" data-l="${f.locked ? 0 : 1}">${f.locked ? '🔓 Reabrir' : '🔒 Cerrar'}</button>` : '') + '</div>';
+};
 
 async function rSeller() {
   const d = await api(`/api/cards?seller=${encodeURIComponent(me)}&limit=500&q=${encodeURIComponent($('sq').value)}`);
@@ -60,6 +74,14 @@ async function render() {
   timer = setInterval(() => { if (!typing() && document.visibilityState === 'visible') go(); }, 5000); // se refresca solo
 }
 async function setPaid(n, paid) { try { await api('/api/card', { n, paid: !!paid }); } catch (e) { $('foot').textContent = e.message; } render(); }
+// Cobro con método: si la tarjeta no estaba pagada, primero se marca pagada y luego se fija Yape/Efectivo.
+async function setPay(n, m, nueva) {
+  try {
+    if (nueva) await api('/api/card', { n, paid: true });
+    await api('/api/card', { n, m });
+  } catch (e) { $('foot').textContent = e.message; }
+  render();
+}
 async function lockCard(n, l) { try { await api('/api/card', { n, lock: !!l }); } catch (e) { $('foot').textContent = e.message; } render(); }
 
 (async () => {
@@ -78,6 +100,7 @@ document.querySelector('.tabs').onclick = (e) => {
 };
 document.body.onclick = (e) => {
   const d = e.target.dataset;
+  if (d.pay) setPay(+d.pay, d.m, !!d.new);
   if (d.tg) setPaid(+d.tg, +d.paid);
   if (d.lk) lockCard(+d.lk, +d.l);
   if (d.del !== undefined) delSeller(+d.del);

@@ -63,7 +63,7 @@
         const n = +r.n, u = +r.u || 0;
         if (!n || u <= db.reset_at) continue;
         const l = db.cards[n];
-        if (!l || u > l.u) { db.cards[n] = { n, name: String(r.name || ""), paid: r.paid ? 1 : 0, amount: +r.amount || 0, u, l: r.l ? 1 : 0 }; delete db.dirty[n]; }
+        if (!l || u > l.u) { db.cards[n] = { n, name: String(r.name || ""), paid: r.paid ? 1 : 0, amount: +r.amount || 0, u, l: r.l ? 1 : 0, m: (r.m === "y" || r.m === "e") ? r.m : "" }; delete db.dirty[n]; }
       }
       Chu.guardar(db);
 
@@ -86,7 +86,7 @@
         const c = db.cards[n], r = rc["c" + n];
         if (!c) { delete db.dirty[n]; continue; }
         if (r && (+r.u || 0) >= c.u) { delete db.dirty[n]; continue; }
-        subir.push({ n: c.n, name: c.name, paid: c.paid, amount: c.amount, u: c.u, l: c.l ? 1 : 0 });
+        subir.push({ n: c.n, name: c.name, paid: c.paid, amount: c.amount, u: c.u, l: c.l ? 1 : 0, m: c.m || "" });
       }
       Chu.guardar(db);
       for (const c of subir) {

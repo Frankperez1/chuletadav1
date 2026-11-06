@@ -31,3 +31,14 @@ input[type=text],input[type=number],input[type=file],textarea,select{width:100%;
 table{width:100%;border-collapse:collapse;font-size:.82rem}th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
 th{color:var(--dim);font-size:.68rem;text-transform:uppercase}td input{margin:0;padding:6px}td input.sm{width:64px}
 .btn:disabled,input:disabled{opacity:.6;cursor:not-allowed}
+
+/* Resumen de cobros por método (cajero / administrador) */
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.pay div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;font-size:.78rem;color:var(--dim)}
+.pay b{display:block;font-size:1.25rem;color:var(--tx)}.pay small{display:block;font-size:.95rem;font-weight:700;color:var(--tx)}
+.pay .y{border-color:#7c3aed}.pay .y b{color:#7c3aed}.pay .e{border-color:var(--ok)}.pay .e b{color:var(--ok)}
+.pay p{grid-column:1/-1;margin:0;text-align:center}
+.btn.y{background:#7c3aed;border-color:#7c3aed;color:#fff}.btn.e{background:var(--ok);border-color:var(--ok);color:#fff}
+.badge.y{background:#7c3aed}.badge.e{background:var(--ok)}
+.paybtns{display:flex;gap:6px;flex-wrap:wrap}
+@media(prefers-color-scheme:dark){.pay .y,.pay .y b{color:#c4b5fd;border-color:#a78bfa}}

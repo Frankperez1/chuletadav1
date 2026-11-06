@@ -34,9 +34,9 @@
     return [...out].sort((a, b) => a - b);
   }
   function ficha(n, db) {
-    const r = db.cards[n] || { n, name: "", paid: 0, amount: 0, u: 0, l: 0 };
+    const r = db.cards[n] || { n, name: "", paid: 0, amount: 0, u: 0, l: 0, m: "" };
     const estado = r.paid ? "pagado" : (String(r.name).trim() ? "no_pagado" : "sin_entregar");
-    return { n, name: r.name, paid: !!r.paid, amount: r.amount, u: r.u, locked: !!r.l, seller: vendedorDe(n, db.sellers), estado };
+    return { n, name: r.name, paid: !!r.paid, amount: r.amount, u: r.u, locked: !!r.l, metodo: r.paid ? (r.m || "") : "", seller: vendedorDe(n, db.sellers), estado };
   }
   function buscar(db, q, filtro, vendedor, limite) {
     q = norm(q || "").trim();
@@ -59,7 +59,10 @@
   function estadisticas(db, vendedor) {
     const fs = numeros(db.sellers, vendedor).map(n => ficha(n, db));
     const pag = fs.filter(f => f.estado === "pagado"), dev = fs.filter(f => f.estado === "no_pagado");
-    return { tarjetas: fs.length, pagadas: pag.length, entregadas_sin_pagar: dev.length,
+    const por = m => { const l = pag.filter(f => f.metodo === m); return { n: l.length, monto: l.reduce((s, f) => s + f.amount, 0) }; };
+    const yape = por("y"), efe = por("e"), sin = por("");
+    return {
+             yape_n: yape.n, yape_monto: yape.monto, efectivo_n: efe.n, efectivo_monto: efe.monto, sin_metodo_n: sin.n, sin_metodo_monto: sin.monto, tarjetas: fs.length, pagadas: pag.length, entregadas_sin_pagar: dev.length,
              sin_entregar: fs.length - pag.length - dev.length,
              cobrado: pag.reduce((s, f) => s + f.amount, 0), por_cobrar: dev.length * db.price, precio: db.price };
   }
@@ -70,7 +73,7 @@
                sin_pagar: fs.filter(f => f.estado === "no_pagado").length, reporte: fs.some(f => f.u > 0) };
     });
   }
-  function guardarTarjeta(db, n, name, paid, lock) {
+  function guardarTarjeta(db, n, name, paid, lock, metodo) {
     if (!vendedorDe(n, db.sellers)) throw new Error(`La tarjeta ${n} no pertenece a ningún vendedor.`);
     const admin = esAdmin();
     const prev = db.cards[n];
@@ -79,9 +82,20 @@
       const soloPago = esCajero() && (name === undefined || name === null) && (lock === undefined || lock === null);
       if (!soloPago) throw new Error("Esta tarjeta ya fue guardada y cerrada. Solo el administrador puede cambiarla.");
     }
-    const cur = prev ? { ...prev } : { n, name: "", paid: 0, amount: 0, u: 0, l: 0 };
+    const cur = prev ? { ...prev } : { n, name: "", paid: 0, amount: 0, u: 0, l: 0, m: "" };
     if (name !== undefined && name !== null) cur.name = String(name).slice(0, 120);
-    if (paid !== undefined && paid !== null) { cur.paid = paid ? 1 : 0; cur.amount = paid ? db.price : 0; }
+    if (paid !== undefined && paid !== null) {
+      const antes = cur.paid;
+      cur.paid = paid ? 1 : 0; cur.amount = paid ? db.price : 0;
+      if (!paid) cur.m = "";                 // al anular el pago se borra el método
+      else if (!antes) cur.m = "";           // pago nuevo: sin método hasta que el cajero lo indique
+    }
+    // Método de pago (Yape / Efectivo): solo lo fija el cajero o el administrador.
+    if (metodo !== undefined && metodo !== null && (admin || esCajero())) {
+      if (metodo !== "y" && metodo !== "e") throw new Error("Método de pago no válido.");
+      if (!cur.paid) throw new Error("Primero hay que marcar la tarjeta como pagada.");
+      cur.m = metodo;
+    }
     if (lock !== undefined && lock !== null) {
       if (!admin) throw new Error("Solo el administrador puede cerrar o reabrir una tarjeta.");
       cur.l = lock ? 1 : 0;
@@ -97,7 +111,7 @@
     for (const n of numeros(db.sellers, seller)) {
       const prev = db.cards[n];
       if (prev && prev.l) continue;
-      const cur = prev ? { ...prev } : { n, name: "", paid: 0, amount: 0, u: 0 };
+      const cur = prev ? { ...prev } : { n, name: "", paid: 0, amount: 0, u: 0, m: "" };
       cur.l = 1; cur.u = Math.max(Date.now(), (prev ? prev.u : 0) + 1);
       db.cards[n] = cur; db.dirty[n] = 1; k++;
     }
@@ -106,7 +120,7 @@
   function exportar(db, vendedor) {
     const ns = new Set(numeros(db.sellers, vendedor));
     const cards = Object.values(db.cards).filter(r => ns.has(+r.n) && r.u > 0).sort((a, b) => a.n - b.n)
-      .map(r => ({ n: r.n, name: r.name, paid: r.paid, amount: r.amount, u: r.u, l: r.l ? 1 : 0 }));
+      .map(r => ({ n: r.n, name: r.name, paid: r.paid, amount: r.amount, u: r.u, l: r.l ? 1 : 0, m: r.m || "" }));
     return { v: 1, by: vendedor || "CAJA", cards };
   }
   function importar(db, texto) {
@@ -131,7 +145,7 @@
         const n = parseInt(r.n, 10), u = parseInt(r.u || 0, 10);
         if (isNaN(n) || isNaN(u)) continue;
         if (u > ((db.cards[n] || {}).u ?? -1) && u > db.reset_at) {
-          db.cards[n] = { n, name: String(r.name || "").slice(0, 120), paid: r.paid ? 1 : 0, amount: parseFloat(r.amount || 0), u, l: r.l ? 1 : 0 };
+          db.cards[n] = { n, name: String(r.name || "").slice(0, 120), paid: r.paid ? 1 : 0, amount: parseFloat(r.amount || 0), u, l: r.l ? 1 : 0, m: (r.m === "y" || r.m === "e") ? r.m : "" };
           db.dirty[n] = 1; k++;
         }
       }
@@ -141,9 +155,9 @@
   }
   function csvExcel(db) {
     const esc = v => { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    const filas = [["N°", "Vendedor", "Entregada a", "Estado", "Cobrado"]];
+    const filas = [["N°", "Vendedor", "Entregada a", "Estado", "Método", "Cobrado"]];
     numeros(db.sellers).forEach(n => { const f = ficha(n, db);
-      filas.push([n, f.seller, f.name, f.estado.replace("_", " ").toUpperCase(), f.amount]); });
+      filas.push([n, f.seller, f.name, f.estado.replace("_", " ").toUpperCase(), f.metodo === "y" ? "Yape" : f.metodo === "e" ? "Efectivo" : "", f.amount]); });
     return "\ufeff" + filas.map(r => r.map(esc).join(",")).join("\r\n") + "\r\n";
   }
 
@@ -176,7 +190,7 @@
         const soloAdmin = ["/api/price", "/api/sellers", "/api/import", "/api/reset"];
         if (soloAdmin.includes(ruta) && !esAdmin()) throw new Error("Solo el administrador puede hacer esto.");
         let r;
-        if (ruta === "/api/card") r = guardarTarjeta(db, parseInt(d.n, 10), d.name, d.paid, d.lock);
+        if (ruta === "/api/card") r = guardarTarjeta(db, parseInt(d.n, 10), d.name, d.paid, d.lock, d.m);
         else if (ruta === "/api/lock") r = cerrarVendedor(db, String(d.seller || ""));
         else if (ruta === "/api/price") { db.price = Math.max(0, parseFloat(d.price) || 0); db.cfg_u = Date.now(); db.cfgDirty = true; r = { ok: true }; }
         else if (ruta === "/api/sellers") {
